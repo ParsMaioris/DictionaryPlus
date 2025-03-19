@@ -119,7 +119,7 @@ public class OneToManyMap<TKey, TValue> : IEnumerable<KeyValuePair<TKey, ISet<TV
             values = bucket.Values;
             return true;
         }
-        values = null;
+        values = new HashSet<TValue>();
         return false;
     }
 
@@ -128,7 +128,7 @@ public class OneToManyMap<TKey, TValue> : IEnumerable<KeyValuePair<TKey, ISet<TV
         _buckets.Clear();
     }
 
-    private Bucket FindBucket(TKey key)
+    private Bucket? FindBucket(TKey key)
     {
         if (key == null)
             throw new ArgumentNullException(nameof(key));
