@@ -1,4 +1,4 @@
-namespace MultiMaps.Core;
+namespace MultiMaps.Core.Internal;
 
 internal class Bucket<TKey, TValue>
 {

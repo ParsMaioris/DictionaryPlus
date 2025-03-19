@@ -1,6 +1,6 @@
 using System.Collections;
 
-namespace MultiMaps.Core;
+namespace MultiMaps.Core.Internal;
 
 internal class MapEnumerator<TKey, TValue> : IEnumerator<KeyValuePair<TKey, ISet<TValue>>>
 {

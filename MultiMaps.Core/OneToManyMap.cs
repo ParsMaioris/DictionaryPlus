@@ -1,4 +1,5 @@
 using System.Collections;
+using MultiMaps.Core.Internal;
 
 namespace MultiMaps.Core;
 
