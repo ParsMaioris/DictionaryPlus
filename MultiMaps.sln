@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MultiMaps.Core", "MultiMaps.Core\MultiMaps.Core.csproj", "{4821E0ED-A6B5-4BAE-96BF-D96BE6BB78B3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MultiMaps.Tests", "MultiMaps.Tests\MultiMaps.Tests.csproj", "{4783A615-2FF9-4DA9-99B6-56B6EB165A2A}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{4821E0ED-A6B5-4BAE-96BF-D96BE6BB78B3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4821E0ED-A6B5-4BAE-96BF-D96BE6BB78B3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4821E0ED-A6B5-4BAE-96BF-D96BE6BB78B3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4821E0ED-A6B5-4BAE-96BF-D96BE6BB78B3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4783A615-2FF9-4DA9-99B6-56B6EB165A2A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4783A615-2FF9-4DA9-99B6-56B6EB165A2A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4783A615-2FF9-4DA9-99B6-56B6EB165A2A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4783A615-2FF9-4DA9-99B6-56B6EB165A2A}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
