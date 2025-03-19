@@ -4,19 +4,7 @@ namespace MultiMaps.Core;
 
 public class OneToManyMap<TKey, TValue> : IEnumerable<KeyValuePair<TKey, ISet<TValue>>>
 {
-    private class Bucket
-    {
-        public TKey Key { get; }
-        public HashSet<TValue> Values { get; }
-
-        public Bucket(TKey key)
-        {
-            Key = key;
-            Values = new HashSet<TValue>();
-        }
-    }
-
-    private readonly List<Bucket> _buckets;
+    private readonly List<Bucket<TKey, TValue>> _buckets;
     private readonly IEqualityComparer<TKey> _comparer;
 
     public OneToManyMap() : this(EqualityComparer<TKey>.Default)
@@ -25,7 +13,7 @@ public class OneToManyMap<TKey, TValue> : IEnumerable<KeyValuePair<TKey, ISet<TV
 
     public OneToManyMap(IEqualityComparer<TKey> comparer)
     {
-        _buckets = new List<Bucket>();
+        _buckets = new List<Bucket<TKey, TValue>>();
         _comparer = comparer ?? throw new ArgumentNullException(nameof(comparer));
     }
 
@@ -53,7 +41,7 @@ public class OneToManyMap<TKey, TValue> : IEnumerable<KeyValuePair<TKey, ISet<TV
         var bucket = FindBucket(key);
         if (bucket == null)
         {
-            bucket = new Bucket(key);
+            bucket = new Bucket<TKey, TValue>(key);
             _buckets.Add(bucket);
         }
         bucket.Values.Add(value);
@@ -67,7 +55,7 @@ public class OneToManyMap<TKey, TValue> : IEnumerable<KeyValuePair<TKey, ISet<TV
         var bucket = FindBucket(key);
         if (bucket == null)
         {
-            bucket = new Bucket(key);
+            bucket = new Bucket<TKey, TValue>(key);
             _buckets.Add(bucket);
         }
 
@@ -128,7 +116,7 @@ public class OneToManyMap<TKey, TValue> : IEnumerable<KeyValuePair<TKey, ISet<TV
         _buckets.Clear();
     }
 
-    private Bucket? FindBucket(TKey key)
+    private Bucket<TKey, TValue>? FindBucket(TKey key)
     {
         if (key == null)
             throw new ArgumentNullException(nameof(key));
@@ -138,10 +126,7 @@ public class OneToManyMap<TKey, TValue> : IEnumerable<KeyValuePair<TKey, ISet<TV
 
     public IEnumerator<KeyValuePair<TKey, ISet<TValue>>> GetEnumerator()
     {
-        foreach (var bucket in _buckets)
-        {
-            yield return new KeyValuePair<TKey, ISet<TValue>>(bucket.Key, bucket.Values);
-        }
+        return new MapEnumerator<TKey, TValue>(_buckets);
     }
 
     IEnumerator IEnumerable.GetEnumerator()
@@ -154,7 +139,7 @@ public class OneToManyMap<TKey, TValue> : IEnumerable<KeyValuePair<TKey, ISet<TV
         var bucket = FindBucket(key);
         if (bucket == null)
         {
-            bucket = new Bucket(key);
+            bucket = new Bucket<TKey, TValue>(key);
             _buckets.Add(bucket);
         }
         return bucket.Values;
