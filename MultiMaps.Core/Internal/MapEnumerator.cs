@@ -5,14 +5,16 @@ namespace MultiMaps.Core.Internal;
 internal class MapEnumerator<TKey, TValue>
     : IEnumerator<KeyValuePair<TKey, ISet<TValue>>>
 {
-    private readonly List<Bucket<TKey, TValue>> _buckets;
-    private int _currentIndex;
+    private readonly List<Bucket<TKey, TValue>>[] _bucketArray;
+    private int _arrayIndex;
+    private int _listIndex;
     private KeyValuePair<TKey, ISet<TValue>> _current;
 
-    public MapEnumerator(List<Bucket<TKey, TValue>> buckets)
+    public MapEnumerator(List<Bucket<TKey, TValue>>[] bucketArray)
     {
-        _buckets = buckets;
-        _currentIndex = -1;
+        _bucketArray = bucketArray;
+        _arrayIndex = 0;
+        _listIndex = -1;
         _current = default;
     }
 
@@ -27,16 +29,21 @@ internal class MapEnumerator<TKey, TValue>
 
     public bool MoveNext()
     {
-        if (_currentIndex < _buckets.Count - 1)
+        while (_arrayIndex < _bucketArray.Length)
         {
-            _currentIndex++;
+            if (_listIndex + 1 < _bucketArray[_arrayIndex].Count)
+            {
+                _listIndex++;
+                var bucket = _bucketArray[_arrayIndex][_listIndex];
+                _current = new KeyValuePair<TKey, ISet<TValue>>(
+                    bucket.Key,
+                    bucket.Values);
 
-            var bucket = _buckets[_currentIndex];
-            _current = new KeyValuePair<TKey, ISet<TValue>>(
-                bucket.Key,
-                bucket.Values);
+                return true;
+            }
 
-            return true;
+            _arrayIndex++;
+            _listIndex = -1;
         }
 
         return false;
@@ -44,7 +51,8 @@ internal class MapEnumerator<TKey, TValue>
 
     public void Reset()
     {
-        _currentIndex = -1;
+        _arrayIndex = 0;
+        _listIndex = -1;
         _current = default;
     }
 }

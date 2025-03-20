@@ -3,8 +3,7 @@ using MultiMaps.Core.Internal;
 
 namespace MultiMaps.Core;
 
-public class OneToManyMap<TKey, TValue>
-    : IEnumerable<KeyValuePair<TKey, ISet<TValue>>>
+public class OneToManyMap<TKey, TValue> : IEnumerable<KeyValuePair<TKey, ISet<TValue>>>
 {
     private List<Bucket<TKey, TValue>>[] _bucketArray;
     private readonly IEqualityComparer<TKey> _comparer;
@@ -15,8 +14,7 @@ public class OneToManyMap<TKey, TValue>
     {
     }
 
-    public OneToManyMap(int bucketCount)
-        : this(new BucketComparer<TKey>(bucketCount))
+    public OneToManyMap(int bucketCount) : this(new BucketComparer<TKey>(bucketCount))
     {
     }
 
@@ -24,13 +22,22 @@ public class OneToManyMap<TKey, TValue>
     {
         _comparer = comparer ?? throw new ArgumentNullException(nameof(comparer));
 
-        _bucketCount = comparer is BucketComparer<TKey> bucketComparer
-            ? bucketComparer.BucketCount
-            : 16;
+        // If it's our bucket comparer, use its bucket count
+        if (comparer is BucketComparer<TKey> bucketComparer)
+        {
+            _bucketCount = bucketComparer.BucketCount;
+        }
+        else
+        {
+            // Default bucket count if not using our bucket comparer
+            _bucketCount = 16;
+        }
 
         _bucketArray = new List<Bucket<TKey, TValue>>[_bucketCount];
         for (int i = 0; i < _bucketCount; i++)
+        {
             _bucketArray[i] = new List<Bucket<TKey, TValue>>();
+        }
     }
 
     public ISet<TValue> this[TKey key]
@@ -51,9 +58,13 @@ public class OneToManyMap<TKey, TValue>
         get
         {
             var keys = new List<TKey>(_count);
-            foreach (var bucketList in _bucketArray)
-                keys.AddRange(bucketList.Select(bucket => bucket.Key));
-
+            for (int i = 0; i < _bucketArray.Length; i++)
+            {
+                foreach (var bucket in _bucketArray[i])
+                {
+                    keys.Add(bucket.Key);
+                }
+            }
             return keys;
         }
     }
@@ -63,9 +74,13 @@ public class OneToManyMap<TKey, TValue>
         get
         {
             var values = new List<ISet<TValue>>(_count);
-            foreach (var bucketList in _bucketArray)
-                values.AddRange(bucketList.Select(bucket => bucket.Values));
-
+            for (int i = 0; i < _bucketArray.Length; i++)
+            {
+                foreach (var bucket in _bucketArray[i])
+                {
+                    values.Add(bucket.Values);
+                }
+            }
             return values;
         }
     }
@@ -76,7 +91,8 @@ public class OneToManyMap<TKey, TValue>
         if (bucket == null)
         {
             bucket = new Bucket<TKey, TValue>(key);
-            _bucketArray[GetBucketIndex(key)].Add(bucket);
+            int index = GetBucketIndex(key);
+            _bucketArray[index].Add(bucket);
             _count++;
         }
         bucket.Values.Add(value);
@@ -91,7 +107,8 @@ public class OneToManyMap<TKey, TValue>
         if (bucket == null)
         {
             bucket = new Bucket<TKey, TValue>(key);
-            _bucketArray[GetBucketIndex(key)].Add(bucket);
+            int index = GetBucketIndex(key);
+            _bucketArray[index].Add(bucket);
             _count++;
         }
 
@@ -101,7 +118,8 @@ public class OneToManyMap<TKey, TValue>
 
     public bool Remove(TKey key)
     {
-        var bucketList = _bucketArray[GetBucketIndex(key)];
+        int index = GetBucketIndex(key);
+        var bucketList = _bucketArray[index];
 
         for (int i = 0; i < bucketList.Count; i++)
         {
@@ -143,9 +161,10 @@ public class OneToManyMap<TKey, TValue>
 
     public void Clear()
     {
-        foreach (var bucketList in _bucketArray)
-            bucketList.Clear();
-
+        for (int i = 0; i < _bucketArray.Length; i++)
+        {
+            _bucketArray[i].Clear();
+        }
         _count = 0;
     }
 
@@ -154,23 +173,27 @@ public class OneToManyMap<TKey, TValue>
         if (key == null)
             throw new ArgumentNullException(nameof(key));
 
-        return _bucketArray[GetBucketIndex(key)]
-            .FirstOrDefault(b => _comparer.Equals(b.Key, key));
+        int index = GetBucketIndex(key);
+        var bucketList = _bucketArray[index];
+
+        return bucketList.FirstOrDefault(b => _comparer.Equals(b.Key, key));
     }
 
     private int GetBucketIndex(TKey key)
     {
-        ArgumentNullException.ThrowIfNull(key);
-        return _comparer is BucketComparer<TKey> bucketComparer
-            ? bucketComparer.GetBucketIndex(key)
-            : Math.Abs(_comparer.GetHashCode(key) % _bucketCount);
+        if (_comparer is BucketComparer<TKey> bucketComparer)
+        {
+            return bucketComparer.GetBucketIndex(key);
+        }
+
+        // If not using our bucket comparer, compute a bucket index ourselves
+        int hashCode = _comparer.GetHashCode(key);
+        return Math.Abs(hashCode % _bucketCount);
     }
 
     public IEnumerator<KeyValuePair<TKey, ISet<TValue>>> GetEnumerator()
     {
-        foreach (var bucketList in _bucketArray)
-            foreach (var bucket in bucketList)
-                yield return new KeyValuePair<TKey, ISet<TValue>>(bucket.Key, bucket.Values);
+        return new MapEnumerator<TKey, TValue>(_bucketArray);
     }
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
@@ -181,7 +204,8 @@ public class OneToManyMap<TKey, TValue>
         if (bucket == null)
         {
             bucket = new Bucket<TKey, TValue>(key);
-            _bucketArray[GetBucketIndex(key)].Add(bucket);
+            int index = GetBucketIndex(key);
+            _bucketArray[index].Add(bucket);
             _count++;
         }
         return bucket.Values;
