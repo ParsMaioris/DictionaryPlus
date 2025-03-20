@@ -3,7 +3,8 @@ using MultiMaps.Core.Internal;
 
 namespace MultiMaps.Core;
 
-public class OneToManyMap<TKey, TValue> : IEnumerable<KeyValuePair<TKey, ISet<TValue>>>
+public class OneToManyMap<TKey, TValue>
+    : IEnumerable<KeyValuePair<TKey, ISet<TValue>>>
 {
     private List<Bucket<TKey, TValue>>[] _bucketArray;
     private readonly IEqualityComparer<TKey> _comparer;
@@ -14,22 +15,22 @@ public class OneToManyMap<TKey, TValue> : IEnumerable<KeyValuePair<TKey, ISet<TV
     {
     }
 
-    public OneToManyMap(int bucketCount) : this(new BucketComparer<TKey>(bucketCount))
+    public OneToManyMap(int bucketCount)
+        : this(new BucketComparer<TKey>(bucketCount))
     {
     }
 
     public OneToManyMap(IEqualityComparer<TKey> comparer)
     {
-        _comparer = comparer ?? throw new ArgumentNullException(nameof(comparer));
+        _comparer = comparer
+            ?? throw new ArgumentNullException(nameof(comparer));
 
-        // If it's our bucket comparer, use its bucket count
         if (comparer is BucketComparer<TKey> bucketComparer)
         {
             _bucketCount = bucketComparer.BucketCount;
         }
         else
         {
-            // Default bucket count if not using our bucket comparer
             _bucketCount = 16;
         }
 
@@ -45,7 +46,8 @@ public class OneToManyMap<TKey, TValue> : IEnumerable<KeyValuePair<TKey, ISet<TV
         get
         {
             var bucket = FindBucket(key)
-                ?? throw new KeyNotFoundException($"The key '{key}' was not found.");
+                ?? throw new KeyNotFoundException(
+                    $"The key '{key}' was not found.");
 
             return bucket.Values;
         }
@@ -181,12 +183,13 @@ public class OneToManyMap<TKey, TValue> : IEnumerable<KeyValuePair<TKey, ISet<TV
 
     private int GetBucketIndex(TKey key)
     {
+        ArgumentNullException.ThrowIfNull(key);
+
         if (_comparer is BucketComparer<TKey> bucketComparer)
         {
             return bucketComparer.GetBucketIndex(key);
         }
 
-        // If not using our bucket comparer, compute a bucket index ourselves
         int hashCode = _comparer.GetHashCode(key);
         return Math.Abs(hashCode % _bucketCount);
     }
