@@ -2,7 +2,8 @@ using System.Collections;
 
 namespace MultiMaps.Core.Internal;
 
-internal class MapEnumerator<TKey, TValue> : IEnumerator<KeyValuePair<TKey, ISet<TValue>>>
+internal class MapEnumerator<TKey, TValue>
+    : IEnumerator<KeyValuePair<TKey, ISet<TValue>>>
 {
     private readonly List<Bucket<TKey, TValue>> _buckets;
     private int _currentIndex;
@@ -29,10 +30,15 @@ internal class MapEnumerator<TKey, TValue> : IEnumerator<KeyValuePair<TKey, ISet
         if (_currentIndex < _buckets.Count - 1)
         {
             _currentIndex++;
+
             var bucket = _buckets[_currentIndex];
-            _current = new KeyValuePair<TKey, ISet<TValue>>(bucket.Key, bucket.Values);
+            _current = new KeyValuePair<TKey, ISet<TValue>>(
+                bucket.Key,
+                bucket.Values);
+
             return true;
         }
+
         return false;
     }
 

@@ -6,13 +6,15 @@ public class FnvHashStrategy<TKey> : IEqualityComparer<TKey>
     private const uint FNV_OFFSET_BASIS = 2166136261;
     private readonly IEqualityComparer<TKey> _innerComparer;
 
-    public FnvHashStrategy() : this(EqualityComparer<TKey>.Default)
+    public FnvHashStrategy()
+        : this(EqualityComparer<TKey>.Default)
     {
     }
 
     public FnvHashStrategy(IEqualityComparer<TKey> innerComparer)
     {
-        _innerComparer = innerComparer ?? throw new ArgumentNullException(nameof(innerComparer));
+        _innerComparer = innerComparer
+            ?? throw new ArgumentNullException(nameof(innerComparer));
     }
 
     public bool Equals(TKey? x, TKey? y)
@@ -26,7 +28,6 @@ public class FnvHashStrategy<TKey> : IEqualityComparer<TKey>
             return 0;
 
         var originalHash = _innerComparer.GetHashCode(obj);
-
         uint hash = FNV_OFFSET_BASIS;
 
         var bytes = BitConverter.GetBytes(originalHash);
@@ -47,13 +48,15 @@ public class MurmurHashStrategy<TKey> : IEqualityComparer<TKey>
     private const int R = 24;
     private readonly IEqualityComparer<TKey> _innerComparer;
 
-    public MurmurHashStrategy() : this(EqualityComparer<TKey>.Default)
+    public MurmurHashStrategy()
+        : this(EqualityComparer<TKey>.Default)
     {
     }
 
     public MurmurHashStrategy(IEqualityComparer<TKey> innerComparer)
     {
-        _innerComparer = innerComparer ?? throw new ArgumentNullException(nameof(innerComparer));
+        _innerComparer = innerComparer
+            ?? throw new ArgumentNullException(nameof(innerComparer));
     }
 
     public bool Equals(TKey? x, TKey? y)
@@ -67,7 +70,6 @@ public class MurmurHashStrategy<TKey> : IEqualityComparer<TKey>
             return 0;
 
         var originalHash = _innerComparer.GetHashCode(obj);
-
         var bytes = BitConverter.GetBytes(originalHash);
         uint h = SEED ^ (uint)bytes.Length;
 

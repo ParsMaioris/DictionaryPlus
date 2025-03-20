@@ -3,39 +3,43 @@ using MultiMaps.Core.Internal;
 
 namespace MultiMaps.Core;
 
-public class OneToManyMap<TKey, TValue> : IEnumerable<KeyValuePair<TKey, ISet<TValue>>>
+public class OneToManyMap<TKey, TValue>
+    : IEnumerable<KeyValuePair<TKey, ISet<TValue>>>
 {
     private readonly List<Bucket<TKey, TValue>> _buckets;
     private readonly IEqualityComparer<TKey> _comparer;
 
-    public OneToManyMap() : this(EqualityComparer<TKey>.Default)
+    public OneToManyMap()
+        : this(EqualityComparer<TKey>.Default)
     {
     }
 
     public OneToManyMap(IEqualityComparer<TKey> comparer)
     {
         _buckets = new List<Bucket<TKey, TValue>>();
-        _comparer = comparer ?? throw new ArgumentNullException(nameof(comparer));
+        _comparer = comparer
+            ?? throw new ArgumentNullException(nameof(comparer));
     }
 
     public ISet<TValue> this[TKey key]
     {
         get
         {
-            var bucket = FindBucket(key);
-            if (bucket == null)
-            {
-                throw new KeyNotFoundException($"The key '{key}' was not found in the dictionary.");
-            }
+            var bucket = FindBucket(key)
+                ?? throw new KeyNotFoundException(
+                    $"The key '{key}' was not found.");
+
             return bucket.Values;
         }
     }
 
     public int Count => _buckets.Count;
 
-    public ICollection<TKey> Keys => _buckets.Select(b => b.Key).ToList();
+    public ICollection<TKey> Keys =>
+        _buckets.Select(b => b.Key).ToList();
 
-    public ICollection<ISet<TValue>> Values => _buckets.Select(b => (ISet<TValue>)b.Values).ToList();
+    public ICollection<ISet<TValue>> Values =>
+        _buckets.Select(b => (ISet<TValue>)b.Values).ToList();
 
     public void Add(TKey key, TValue value)
     {
@@ -61,9 +65,7 @@ public class OneToManyMap<TKey, TValue> : IEnumerable<KeyValuePair<TKey, ISet<TV
         }
 
         foreach (var value in values)
-        {
             bucket.Values.Add(value);
-        }
     }
 
     public bool Remove(TKey key)
@@ -82,17 +84,10 @@ public class OneToManyMap<TKey, TValue> : IEnumerable<KeyValuePair<TKey, ISet<TV
     public bool RemoveValue(TKey key, TValue value)
     {
         var bucket = FindBucket(key);
-        if (bucket != null)
-        {
-            return bucket.Values.Remove(value);
-        }
-        return false;
+        return bucket != null && bucket.Values.Remove(value);
     }
 
-    public bool ContainsKey(TKey key)
-    {
-        return FindBucket(key) != null;
-    }
+    public bool ContainsKey(TKey key) => FindBucket(key) != null;
 
     public bool ContainsValue(TKey key, TValue value)
     {
@@ -112,17 +107,15 @@ public class OneToManyMap<TKey, TValue> : IEnumerable<KeyValuePair<TKey, ISet<TV
         return false;
     }
 
-    public void Clear()
-    {
-        _buckets.Clear();
-    }
+    public void Clear() => _buckets.Clear();
 
     private Bucket<TKey, TValue>? FindBucket(TKey key)
     {
         if (key == null)
             throw new ArgumentNullException(nameof(key));
 
-        return _buckets.FirstOrDefault(b => _comparer.Equals(b.Key, key));
+        return _buckets.FirstOrDefault(b =>
+            _comparer.Equals(b.Key, key));
     }
 
     public IEnumerator<KeyValuePair<TKey, ISet<TValue>>> GetEnumerator()
@@ -130,10 +123,7 @@ public class OneToManyMap<TKey, TValue> : IEnumerable<KeyValuePair<TKey, ISet<TV
         return new MapEnumerator<TKey, TValue>(_buckets);
     }
 
-    IEnumerator IEnumerable.GetEnumerator()
-    {
-        return GetEnumerator();
-    }
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
     public ISet<TValue> GetOrCreate(TKey key)
     {

@@ -5,14 +5,25 @@ public class BucketComparer<TKey> : IEqualityComparer<TKey>
     private readonly int _bucketCount;
     private readonly IEqualityComparer<TKey> _innerComparer;
 
-    public BucketComparer(int bucketCount) : this(bucketCount, EqualityComparer<TKey>.Default)
+    public BucketComparer(int bucketCount)
+        : this(bucketCount, EqualityComparer<TKey>.Default)
     {
     }
 
-    public BucketComparer(int bucketCount, IEqualityComparer<TKey> innerComparer)
+    public BucketComparer(
+        int bucketCount,
+        IEqualityComparer<TKey> innerComparer)
     {
-        _bucketCount = bucketCount > 0 ? bucketCount : throw new ArgumentOutOfRangeException(nameof(bucketCount), "Bucket count must be positive");
-        _innerComparer = innerComparer ?? throw new ArgumentNullException(nameof(innerComparer));
+        if (bucketCount <= 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(bucketCount),
+                "Bucket count must be positive");
+        }
+
+        _bucketCount = bucketCount;
+        _innerComparer = innerComparer
+            ?? throw new ArgumentNullException(nameof(innerComparer));
     }
 
     public bool Equals(TKey? x, TKey? y)
@@ -26,6 +37,7 @@ public class BucketComparer<TKey> : IEqualityComparer<TKey>
             return 0;
 
         var originalHash = _innerComparer.GetHashCode(obj);
+
         return Math.Abs(originalHash % _bucketCount);
     }
 

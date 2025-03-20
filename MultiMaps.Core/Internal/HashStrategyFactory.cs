@@ -9,19 +9,29 @@ public enum HashingAlgorithm
 
 public static class HashingStrategies
 {
-    public static IEqualityComparer<TKey> Create<TKey>(HashingAlgorithm algorithm)
+    public static IEqualityComparer<TKey> Create<TKey>(
+        HashingAlgorithm algorithm)
     {
         return algorithm switch
         {
-            HashingAlgorithm.FowlerNollVo => new Internal.FnvHashStrategy<TKey>(),
-            HashingAlgorithm.Murmur => new Internal.MurmurHashStrategy<TKey>(),
+            HashingAlgorithm.FowlerNollVo
+                => new Internal.FnvHashStrategy<TKey>(),
+
+            HashingAlgorithm.Murmur
+                => new Internal.MurmurHashStrategy<TKey>(),
+
             _ => EqualityComparer<TKey>.Default
         };
     }
 
-    public static IEqualityComparer<TKey> CreateBucketed<TKey>(int bucketCount, HashingAlgorithm algorithm = HashingAlgorithm.Default)
+    public static IEqualityComparer<TKey> CreateBucketed<TKey>(
+        int bucketCount,
+        HashingAlgorithm algorithm = HashingAlgorithm.Default)
     {
         var baseComparer = Create<TKey>(algorithm);
-        return new Internal.BucketComparer<TKey>(bucketCount, baseComparer);
+
+        return new Internal.BucketComparer<TKey>(
+            bucketCount,
+            baseComparer);
     }
 }
