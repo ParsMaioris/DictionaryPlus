@@ -120,7 +120,7 @@ function main()
 
 % Code listing settings (no line numbers):
 \\lstset{
-  basicstyle=\\footnotesize\\ttfamily,
+  basicstyle=\\fontsize{14}{20}\\selectfont\\ttfamily,
   breaklines=true,
   showstringspaces=false,
   tabsize=2
