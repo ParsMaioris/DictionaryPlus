@@ -14,4 +14,27 @@ public class MultiValueDictionary<TKey, TValue>
     }
 
     public MultiValueDictionary() : this(DefaultCapacity) { }
+
+    private void Resize(int newCapacity)
+    {
+        var oldBuckets = _buckets;
+        _buckets = new Bucket<TKey, TValue>[newCapacity];
+        _count = 0;
+
+        foreach (var bucket in oldBuckets)
+        {
+            if (bucket == null) continue;
+
+            var entry = bucket.Head;
+            while (entry != null)
+            {
+                foreach (var value in entry.Values)
+                {
+                    // Add(entry.Key, value);
+                }
+
+                entry = entry.Next;
+            }
+        }
+    }
 }
