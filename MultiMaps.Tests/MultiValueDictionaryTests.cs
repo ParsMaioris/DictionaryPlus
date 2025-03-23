@@ -18,4 +18,19 @@ public class MultiValueDictionaryTests
         Assert.AreEqual(3, values.Count);
         CollectionAssert.AreEquivalent(new[] { 1, 2, 3 }, values.ToArray());
     }
+
+    [TestMethod]
+    public void RemoveValueTest()
+    {
+        var dictionary = new MultiValueDictionary<string, int>();
+        dictionary.Add("numbers", 42);
+        dictionary.Add("numbers", 100);
+
+        bool removed = dictionary.RemoveValue("numbers", 42);
+        var values = dictionary.GetValues("numbers");
+
+        Assert.IsTrue(removed);
+        Assert.AreEqual(1, values.Count);
+        Assert.AreEqual(100, values.First());
+    }
 }
