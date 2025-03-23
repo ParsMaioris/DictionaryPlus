@@ -1,16 +1,19 @@
+using System.Collections;
+
 namespace MultiMaps.Core;
 
-public class MultiValueDictionary<TKey, TValue>
+public class MultiValueDictionary<TKey, TValue> : IEnumerable<KeyValuePair<TKey, TValue>>
 {
     private const int DefaultCapacity = 64;
     private const float LoadFactorThreshold = 0.75f;
 
-    private Bucket<TKey, TValue>[] _buckets;
-    private int _count;
+    internal Bucket<TKey, TValue>[] Buckets;
+    internal int Count;
+    internal int Version;
 
     public MultiValueDictionary(int capacity)
     {
-        _buckets = new Bucket<TKey, TValue>[capacity];
+        Buckets = new Bucket<TKey, TValue>[capacity];
     }
 
     public MultiValueDictionary() : this(DefaultCapacity) { }
@@ -24,11 +27,11 @@ public class MultiValueDictionary<TKey, TValue>
 
         int index = GetIndex(key);
         Bucket<TKey, TValue> bucket;
-        if (_buckets[index] == null)
+        if (Buckets[index] == null)
         {
-            _buckets[index] = new Bucket<TKey, TValue>();
+            Buckets[index] = new Bucket<TKey, TValue>();
         }
-        bucket = _buckets[index];
+        bucket = Buckets[index];
 
         var entry = FindEntry(bucket, key);
         if (entry == null)
@@ -38,11 +41,13 @@ public class MultiValueDictionary<TKey, TValue>
             entry.Next = bucket.Head;
             bucket.Head = entry;
 
-            _count++;
+            Count++;
+            Version++;
         }
         else
         {
             entry.Values.Add(value);
+            Version++;
         }
     }
 
@@ -52,7 +57,7 @@ public class MultiValueDictionary<TKey, TValue>
             throw new ArgumentNullException(nameof(key));
 
         int index = GetIndex(key);
-        var bucket = _buckets[index];
+        var bucket = Buckets[index];
         if (bucket == null) return Array.Empty<TValue>();
 
         var entry = FindEntry(bucket, key);
@@ -72,19 +77,21 @@ public class MultiValueDictionary<TKey, TValue>
             throw new ArgumentNullException(nameof(key));
 
         int index = GetIndex(key);
-        var bucket = _buckets[index];
+        var bucket = Buckets[index];
         if (bucket == null) return false;
 
         var entry = FindEntry(bucket, key);
         if (entry == null) return false;
 
         bool removed = entry.Values.Remove(value);
-
-        if (removed && entry.Values.Count == 0)
+        if (removed)
         {
-            RemoveKeyInternal(bucket, key);
+            Version++;
+            if (entry.Values.Count == 0)
+            {
+                RemoveKeyInternal(bucket, key);
+            }
         }
-
         return removed;
     }
 
@@ -94,26 +101,38 @@ public class MultiValueDictionary<TKey, TValue>
             throw new ArgumentNullException(nameof(key));
 
         int index = GetIndex(key);
-        var bucket = _buckets[index];
+        var bucket = Buckets[index];
         if (bucket == null) return false;
 
         return RemoveKeyInternal(bucket, key);
     }
 
+    public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
+    {
+        //return new MultiValueDictionaryEnumerator<TKey, TValue>(this);
+        throw new NotImplementedException();
+    }
+
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return GetEnumerator();
+    }
+
     private void EnsureCapacity()
     {
-        float loadFactor = (float)_count / _buckets.Length;
+        float loadFactor = (float)Count / Buckets.Length;
         if (loadFactor >= LoadFactorThreshold)
         {
-            Resize(_buckets.Length * 2);
+            Resize(Buckets.Length * 2);
         }
     }
 
     private void Resize(int newCapacity)
     {
-        var oldBuckets = _buckets;
-        _buckets = new Bucket<TKey, TValue>[newCapacity];
-        _count = 0;
+        var oldBuckets = Buckets;
+        Buckets = new Bucket<TKey, TValue>[newCapacity];
+        Count = 0;
+        Version++;
 
         foreach (var bucket in oldBuckets)
         {
@@ -134,7 +153,7 @@ public class MultiValueDictionary<TKey, TValue>
 
     private int GetIndex(TKey key)
     {
-        return Math.Abs(key!.GetHashCode()) % _buckets.Length;
+        return Math.Abs(key!.GetHashCode()) % Buckets.Length;
     }
 
     private Entry<TKey, TValue>? FindEntry(Bucket<TKey, TValue> bucket, TKey key)
@@ -170,14 +189,13 @@ public class MultiValueDictionary<TKey, TValue>
                     previous.Next = current.Next;
                 }
 
-                _count--;
+                Count--;
+                Version++;
                 return true;
             }
-
             previous = current;
             current = current.Next;
         }
-
         return false;
     }
 }
