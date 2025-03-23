@@ -69,7 +69,7 @@ public class MultiValueDictionary<TKey, TValue>
             {
                 foreach (var value in entry.Values)
                 {
-                    // Add(entry.Key, value);
+                    Add(entry.Key, value);
                 }
 
                 entry = entry.Next;
