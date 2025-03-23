@@ -15,6 +15,41 @@ public class MultiValueDictionary<TKey, TValue>
 
     public MultiValueDictionary() : this(DefaultCapacity) { }
 
+    public void Add(TKey key, TValue value)
+    {
+        if (key == null) throw new ArgumentNullException(nameof(key));
+
+        EnsureCapacity();
+
+        int index = GetIndex(key);
+        Bucket<TKey, TValue> bucket;
+        if (_buckets[index] == null)
+        {
+            _buckets[index] = new Bucket<TKey, TValue>();
+        }
+        bucket = _buckets[index];
+
+        var entry = FindEntry(bucket, key);
+        if (entry == null)
+        {
+            entry = new Entry<TKey, TValue>(key);
+            entry.Values.Add(value);
+            entry.Next = bucket.Head;
+            bucket.Head = entry;
+
+            _count++;
+        }
+    }
+
+    private void EnsureCapacity()
+    {
+        float loadFactor = (float)_count / _buckets.Length;
+        if (loadFactor >= LoadFactorThreshold)
+        {
+            Resize(_buckets.Length * 2);
+        }
+    }
+
     private void Resize(int newCapacity)
     {
         var oldBuckets = _buckets;
@@ -35,15 +70,6 @@ public class MultiValueDictionary<TKey, TValue>
 
                 entry = entry.Next;
             }
-        }
-    }
-
-    private void EnsureCapacity()
-    {
-        float loadFactor = (float)_count / _buckets.Length;
-        if (loadFactor >= LoadFactorThreshold)
-        {
-            Resize(_buckets.Length * 2);
         }
     }
 
