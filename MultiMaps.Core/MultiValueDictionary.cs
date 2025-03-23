@@ -40,6 +40,10 @@ public class MultiValueDictionary<TKey, TValue>
 
     private void EnsureCapacity()
     {
-
+        float loadFactor = (float)_count / _buckets.Length;
+        if (loadFactor >= LoadFactorThreshold)
+        {
+            Resize(_buckets.Length * 2);
+        }
     }
 }
