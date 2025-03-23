@@ -17,7 +17,8 @@ public class MultiValueDictionary<TKey, TValue>
 
     public void Add(TKey key, TValue value)
     {
-        if (key == null) throw new ArgumentNullException(nameof(key));
+        if (key == null)
+            throw new ArgumentNullException(nameof(key));
 
         EnsureCapacity();
 
@@ -47,7 +48,8 @@ public class MultiValueDictionary<TKey, TValue>
 
     public IReadOnlyCollection<TValue> GetValues(TKey key)
     {
-        if (key == null) throw new ArgumentNullException(nameof(key));
+        if (key == null)
+            throw new ArgumentNullException(nameof(key));
 
         int index = GetIndex(key);
         var bucket = _buckets[index];
@@ -62,6 +64,28 @@ public class MultiValueDictionary<TKey, TValue>
         {
             return entry.Values.AsReadOnly();
         }
+    }
+
+    public bool RemoveValue(TKey key, TValue value)
+    {
+        if (key == null)
+            throw new ArgumentNullException(nameof(key));
+
+        int index = GetIndex(key);
+        var bucket = _buckets[index];
+        if (bucket == null) return false;
+
+        var entry = FindEntry(bucket, key);
+        if (entry == null) return false;
+
+        bool removed = entry.Values.Remove(value);
+
+        if (removed && entry.Values.Count == 0)
+        {
+            RemoveKeyInternal(bucket, key);
+        }
+
+        return removed;
     }
 
     private void EnsureCapacity()
@@ -114,5 +138,34 @@ public class MultiValueDictionary<TKey, TValue>
             current = current.Next;
         }
         return null;
+    }
+
+    private bool RemoveKeyInternal(Bucket<TKey, TValue> bucket, TKey key)
+    {
+        Entry<TKey, TValue>? previous = null;
+        var current = bucket.Head;
+
+        while (current != null)
+        {
+            if (current.Key!.Equals(key))
+            {
+                if (previous == null)
+                {
+                    bucket.Head = current.Next;
+                }
+                else
+                {
+                    previous.Next = current.Next;
+                }
+
+                _count--;
+                return true;
+            }
+
+            previous = current;
+            current = current.Next;
+        }
+
+        return false;
     }
 }
