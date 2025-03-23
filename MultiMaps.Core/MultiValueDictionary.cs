@@ -88,6 +88,18 @@ public class MultiValueDictionary<TKey, TValue>
         return removed;
     }
 
+    public bool RemoveKey(TKey key)
+    {
+        if (key == null)
+            throw new ArgumentNullException(nameof(key));
+
+        int index = GetIndex(key);
+        var bucket = _buckets[index];
+        if (bucket == null) return false;
+
+        return RemoveKeyInternal(bucket, key);
+    }
+
     private void EnsureCapacity()
     {
         float loadFactor = (float)_count / _buckets.Length;
