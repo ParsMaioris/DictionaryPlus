@@ -39,6 +39,10 @@ public class MultiValueDictionary<TKey, TValue>
 
             _count++;
         }
+        else
+        {
+            entry.Values.Add(value);
+        }
     }
 
     private void EnsureCapacity()
