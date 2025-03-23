@@ -21,267 +21,31 @@
 
 \begin{document}
 
-\Needspace{494\baselineskip}
+\Needspace{225\baselineskip}
 \begin{lstlisting}[language=Java]
 
-=== File: ../Internal/Bucket.cs ===
-namespace MultiMaps.Core.Internal;
+=== File: ../Bucket.cs ===
+namespace MultiMaps.Core;
 
 internal class Bucket<TKey, TValue>
 {
-    public TKey Key { get; }
-    public HashSet<TValue> Values { get; }
-
-    public Bucket(TKey key)
-    {
-        Key = key;
-        Values = new HashSet<TValue>();
-    }
+    public Entry<TKey, TValue>? Head { get; set; }
 }
 
-=== File: ../Internal/BucketComparer.cs ===
-namespace MultiMaps.Core.Internal;
 
-public class BucketComparer<TKey> : IEqualityComparer<TKey>
-{
-    private readonly int _bucketCount;
-    private readonly IEqualityComparer<TKey> _innerComparer;
-
-    public BucketComparer(int bucketCount)
-        : this(bucketCount, EqualityComparer<TKey>.Default)
-    {
-    }
-
-    public BucketComparer(
-        int bucketCount,
-        IEqualityComparer<TKey> innerComparer)
-    {
-        if (bucketCount <= 0)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(bucketCount),
-                "Bucket count must be positive");
-        }
-
-        _bucketCount = bucketCount;
-        _innerComparer = innerComparer
-            ?? throw new ArgumentNullException(nameof(innerComparer));
-    }
-
-    public bool Equals(TKey? x, TKey? y)
-    {
-        return _innerComparer.Equals(x, y);
-    }
-
-    public int GetHashCode(TKey obj)
-    {
-        if (obj == null)
-            return 0;
-
-        var originalHash = _innerComparer.GetHashCode(obj);
-
-        return Math.Abs(originalHash % _bucketCount);
-    }
-
-    public int GetBucketIndex(TKey key)
-    {
-        return GetHashCode(key);
-    }
-
-    public int BucketCount => _bucketCount;
-}
-
-=== File: ../Internal/FnvHashStrategy.cs ===
-namespace MultiMaps.Core.Internal;
-
-public class FnvHashStrategy<TKey> : IEqualityComparer<TKey>
-{
-    private const uint FNV_PRIME = 16777619;
-    private const uint FNV_OFFSET_BASIS = 2166136261;
-    private readonly IEqualityComparer<TKey> _innerComparer;
-
-    public FnvHashStrategy()
-        : this(EqualityComparer<TKey>.Default)
-    {
-    }
-
-    public FnvHashStrategy(IEqualityComparer<TKey> innerComparer)
-    {
-        _innerComparer = innerComparer
-            ?? throw new ArgumentNullException(nameof(innerComparer));
-    }
-
-    public bool Equals(TKey? x, TKey? y)
-    {
-        return _innerComparer.Equals(x, y);
-    }
-
-    public int GetHashCode(TKey obj)
-    {
-        if (obj == null)
-            return 0;
-
-        var originalHash = _innerComparer.GetHashCode(obj);
-        uint hash = FNV_OFFSET_BASIS;
-
-        var bytes = BitConverter.GetBytes(originalHash);
-        foreach (var b in bytes)
-        {
-            hash ^= b;
-            hash *= FNV_PRIME;
-        }
-
-        return (int)hash;
-    }
-}
-
-public class MurmurHashStrategy<TKey> : IEqualityComparer<TKey>
-{
-    private const uint SEED = 0x9747b28c;
-    private const uint M = 0x5bd1e995;
-    private const int R = 24;
-    private readonly IEqualityComparer<TKey> _innerComparer;
-
-    public MurmurHashStrategy()
-        : this(EqualityComparer<TKey>.Default)
-    {
-    }
-
-    public MurmurHashStrategy(IEqualityComparer<TKey> innerComparer)
-    {
-        _innerComparer = innerComparer
-            ?? throw new ArgumentNullException(nameof(innerComparer));
-    }
-
-    public bool Equals(TKey? x, TKey? y)
-    {
-        return _innerComparer.Equals(x, y);
-    }
-
-    public int GetHashCode(TKey obj)
-    {
-        if (obj == null)
-            return 0;
-
-        var originalHash = _innerComparer.GetHashCode(obj);
-        var bytes = BitConverter.GetBytes(originalHash);
-        uint h = SEED ^ (uint)bytes.Length;
-
-        foreach (var b in bytes)
-        {
-            uint k = b;
-            k *= M;
-            k ^= k >> R;
-            k *= M;
-
-            h *= M;
-            h ^= k;
-        }
-
-        h ^= h >> 13;
-        h *= M;
-        h ^= h >> 15;
-
-        return (int)h;
-    }
-}
-
-=== File: ../Internal/HashStrategyFactory.cs ===
+=== File: ../Entry.cs ===
 namespace MultiMaps.Core;
 
-public enum HashingAlgorithm
+internal class Entry<TKey, TValue>
 {
-    Default,
-    FowlerNollVo,
-    Murmur
-}
+    public TKey Key { get; }
+    public List<TValue> Values { get; }
+    public Entry<TKey, TValue>? Next { get; set; }
 
-public static class HashingStrategies
-{
-    public static IEqualityComparer<TKey> Create<TKey>(
-        HashingAlgorithm algorithm)
+    public Entry(TKey key)
     {
-        return algorithm switch
-        {
-            HashingAlgorithm.FowlerNollVo
-                => new Internal.FnvHashStrategy<TKey>(),
-
-            HashingAlgorithm.Murmur
-                => new Internal.MurmurHashStrategy<TKey>(),
-
-            _ => EqualityComparer<TKey>.Default
-        };
-    }
-
-    public static IEqualityComparer<TKey> CreateBucketed<TKey>(
-        int bucketCount,
-        HashingAlgorithm algorithm = HashingAlgorithm.Default)
-    {
-        var baseComparer = Create<TKey>(algorithm);
-
-        return new Internal.BucketComparer<TKey>(
-            bucketCount,
-            baseComparer);
-    }
-}
-
-=== File: ../Internal/MapEnumerator.cs ===
-using System.Collections;
-
-namespace MultiMaps.Core.Internal;
-
-internal class MapEnumerator<TKey, TValue>
-    : IEnumerator<KeyValuePair<TKey, ISet<TValue>>>
-{
-    private readonly List<Bucket<TKey, TValue>>[] _bucketArray;
-    private int _arrayIndex;
-    private int _listIndex;
-    private KeyValuePair<TKey, ISet<TValue>> _current;
-
-    public MapEnumerator(List<Bucket<TKey, TValue>>[] bucketArray)
-    {
-        _bucketArray = bucketArray;
-        _arrayIndex = 0;
-        _listIndex = -1;
-        _current = default;
-    }
-
-    public KeyValuePair<TKey, ISet<TValue>> Current => _current;
-
-    object IEnumerator.Current => Current;
-
-    public void Dispose()
-    {
-        // No unmanaged resources to dispose
-    }
-
-    public bool MoveNext()
-    {
-        while (_arrayIndex < _bucketArray.Length)
-        {
-            if (_listIndex + 1 < _bucketArray[_arrayIndex].Count)
-            {
-                _listIndex++;
-                var bucket = _bucketArray[_arrayIndex][_listIndex];
-                _current = new KeyValuePair<TKey, ISet<TValue>>(
-                    bucket.Key,
-                    bucket.Values);
-
-                return true;
-            }
-
-            _arrayIndex++;
-            _listIndex = -1;
-        }
-
-        return false;
-    }
-
-    public void Reset()
-    {
-        _arrayIndex = 0;
-        _listIndex = -1;
-        _current = default;
+        Key = key;
+        Values = new List<TValue>();
     }
 }
 
@@ -297,221 +61,188 @@ internal class MapEnumerator<TKey, TValue>
 </Project>
 
 
-=== File: ../OneToManyMap.cs ===
-using System.Collections;
-using MultiMaps.Core.Internal;
-
+=== File: ../MultiValueDictionary.cs ===
 namespace MultiMaps.Core;
 
-public class OneToManyMap<TKey, TValue>
-    : IEnumerable<KeyValuePair<TKey, ISet<TValue>>>
+public class MultiValueDictionary<TKey, TValue>
 {
-    private List<Bucket<TKey, TValue>>[] _bucketArray;
-    private readonly IEqualityComparer<TKey> _comparer;
-    private readonly int _bucketCount;
+    private const int DefaultCapacity = 64;
+    private const float LoadFactorThreshold = 0.75f;
+
+    private Bucket<TKey, TValue>[] _buckets;
     private int _count;
 
-    public OneToManyMap() : this(16)
+    public MultiValueDictionary(int capacity)
     {
+        _buckets = new Bucket<TKey, TValue>[capacity];
     }
 
-    public OneToManyMap(int bucketCount)
-        : this(new BucketComparer<TKey>(bucketCount))
-    {
-    }
-
-    public OneToManyMap(IEqualityComparer<TKey> comparer)
-    {
-        _comparer = comparer
-            ?? throw new ArgumentNullException(nameof(comparer));
-
-        if (comparer is BucketComparer<TKey> bucketComparer)
-        {
-            _bucketCount = bucketComparer.BucketCount;
-        }
-        else
-        {
-            _bucketCount = 16;
-        }
-
-        _bucketArray = new List<Bucket<TKey, TValue>>[_bucketCount];
-        for (int i = 0; i < _bucketCount; i++)
-        {
-            _bucketArray[i] = new List<Bucket<TKey, TValue>>();
-        }
-    }
-
-    public ISet<TValue> this[TKey key]
-    {
-        get
-        {
-            var bucket = FindBucket(key)
-                ?? throw new KeyNotFoundException(
-                    $"The key '{key}' was not found.");
-
-            return bucket.Values;
-        }
-    }
-
-    public int Count => _count;
-
-    public ICollection<TKey> Keys
-    {
-        get
-        {
-            var keys = new List<TKey>(_count);
-            for (int i = 0; i < _bucketArray.Length; i++)
-            {
-                foreach (var bucket in _bucketArray[i])
-                {
-                    keys.Add(bucket.Key);
-                }
-            }
-            return keys;
-        }
-    }
-
-    public ICollection<ISet<TValue>> Values
-    {
-        get
-        {
-            var values = new List<ISet<TValue>>(_count);
-            for (int i = 0; i < _bucketArray.Length; i++)
-            {
-                foreach (var bucket in _bucketArray[i])
-                {
-                    values.Add(bucket.Values);
-                }
-            }
-            return values;
-        }
-    }
+    public MultiValueDictionary() : this(DefaultCapacity) { }
 
     public void Add(TKey key, TValue value)
-    {
-        var bucket = FindBucket(key);
-        if (bucket == null)
-        {
-            bucket = new Bucket<TKey, TValue>(key);
-            int index = GetBucketIndex(key);
-            _bucketArray[index].Add(bucket);
-            _count++;
-        }
-        bucket.Values.Add(value);
-    }
-
-    public void AddRange(TKey key, IEnumerable<TValue> values)
-    {
-        if (values == null)
-            throw new ArgumentNullException(nameof(values));
-
-        var bucket = FindBucket(key);
-        if (bucket == null)
-        {
-            bucket = new Bucket<TKey, TValue>(key);
-            int index = GetBucketIndex(key);
-            _bucketArray[index].Add(bucket);
-            _count++;
-        }
-
-        foreach (var value in values)
-            bucket.Values.Add(value);
-    }
-
-    public bool Remove(TKey key)
-    {
-        int index = GetBucketIndex(key);
-        var bucketList = _bucketArray[index];
-
-        for (int i = 0; i < bucketList.Count; i++)
-        {
-            if (_comparer.Equals(bucketList[i].Key, key))
-            {
-                bucketList.RemoveAt(i);
-                _count--;
-                return true;
-            }
-        }
-        return false;
-    }
-
-    public bool RemoveValue(TKey key, TValue value)
-    {
-        var bucket = FindBucket(key);
-        return bucket != null && bucket.Values.Remove(value);
-    }
-
-    public bool ContainsKey(TKey key) => FindBucket(key) != null;
-
-    public bool ContainsValue(TKey key, TValue value)
-    {
-        var bucket = FindBucket(key);
-        return bucket != null && bucket.Values.Contains(value);
-    }
-
-    public bool TryGetValues(TKey key, out ISet<TValue> values)
-    {
-        var bucket = FindBucket(key);
-        if (bucket != null)
-        {
-            values = bucket.Values;
-            return true;
-        }
-        values = new HashSet<TValue>();
-        return false;
-    }
-
-    public void Clear()
-    {
-        for (int i = 0; i < _bucketArray.Length; i++)
-        {
-            _bucketArray[i].Clear();
-        }
-        _count = 0;
-    }
-
-    private Bucket<TKey, TValue>? FindBucket(TKey key)
     {
         if (key == null)
             throw new ArgumentNullException(nameof(key));
 
-        int index = GetBucketIndex(key);
-        var bucketList = _bucketArray[index];
+        EnsureCapacity();
 
-        return bucketList.FirstOrDefault(b => _comparer.Equals(b.Key, key));
-    }
-
-    private int GetBucketIndex(TKey key)
-    {
-        ArgumentNullException.ThrowIfNull(key);
-
-        if (_comparer is BucketComparer<TKey> bucketComparer)
+        int index = GetIndex(key);
+        Bucket<TKey, TValue> bucket;
+        if (_buckets[index] == null)
         {
-            return bucketComparer.GetBucketIndex(key);
+            _buckets[index] = new Bucket<TKey, TValue>();
         }
+        bucket = _buckets[index];
 
-        int hashCode = _comparer.GetHashCode(key);
-        return Math.Abs(hashCode % _bucketCount);
-    }
-
-    public IEnumerator<KeyValuePair<TKey, ISet<TValue>>> GetEnumerator()
-    {
-        return new MapEnumerator<TKey, TValue>(_bucketArray);
-    }
-
-    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-
-    public ISet<TValue> GetOrCreate(TKey key)
-    {
-        var bucket = FindBucket(key);
-        if (bucket == null)
+        var entry = FindEntry(bucket, key);
+        if (entry == null)
         {
-            bucket = new Bucket<TKey, TValue>(key);
-            int index = GetBucketIndex(key);
-            _bucketArray[index].Add(bucket);
+            entry = new Entry<TKey, TValue>(key);
+            entry.Values.Add(value);
+            entry.Next = bucket.Head;
+            bucket.Head = entry;
+
             _count++;
         }
-        return bucket.Values;
+        else
+        {
+            entry.Values.Add(value);
+        }
+    }
+
+    public IReadOnlyCollection<TValue> GetValues(TKey key)
+    {
+        if (key == null)
+            throw new ArgumentNullException(nameof(key));
+
+        int index = GetIndex(key);
+        var bucket = _buckets[index];
+        if (bucket == null) return Array.Empty<TValue>();
+
+        var entry = FindEntry(bucket, key);
+        if (entry == null)
+        {
+            return Array.Empty<TValue>();
+        }
+        else
+        {
+            return entry.Values.AsReadOnly();
+        }
+    }
+
+    public bool RemoveValue(TKey key, TValue value)
+    {
+        if (key == null)
+            throw new ArgumentNullException(nameof(key));
+
+        int index = GetIndex(key);
+        var bucket = _buckets[index];
+        if (bucket == null) return false;
+
+        var entry = FindEntry(bucket, key);
+        if (entry == null) return false;
+
+        bool removed = entry.Values.Remove(value);
+
+        if (removed && entry.Values.Count == 0)
+        {
+            RemoveKeyInternal(bucket, key);
+        }
+
+        return removed;
+    }
+
+    public bool RemoveKey(TKey key)
+    {
+        if (key == null)
+            throw new ArgumentNullException(nameof(key));
+
+        int index = GetIndex(key);
+        var bucket = _buckets[index];
+        if (bucket == null) return false;
+
+        return RemoveKeyInternal(bucket, key);
+    }
+
+    private void EnsureCapacity()
+    {
+        float loadFactor = (float)_count / _buckets.Length;
+        if (loadFactor >= LoadFactorThreshold)
+        {
+            Resize(_buckets.Length * 2);
+        }
+    }
+
+    private void Resize(int newCapacity)
+    {
+        var oldBuckets = _buckets;
+        _buckets = new Bucket<TKey, TValue>[newCapacity];
+        _count = 0;
+
+        foreach (var bucket in oldBuckets)
+        {
+            if (bucket == null) continue;
+
+            var entry = bucket.Head;
+            while (entry != null)
+            {
+                foreach (var value in entry.Values)
+                {
+                    Add(entry.Key, value);
+                }
+
+                entry = entry.Next;
+            }
+        }
+    }
+
+    private int GetIndex(TKey key)
+    {
+        return Math.Abs(key!.GetHashCode()) % _buckets.Length;
+    }
+
+    private Entry<TKey, TValue>? FindEntry(Bucket<TKey, TValue> bucket, TKey key)
+    {
+        var current = bucket.Head;
+        while (current != null)
+        {
+            if (current.Key!.Equals(key))
+            {
+                return current;
+            }
+
+            current = current.Next;
+        }
+        return null;
+    }
+
+    private bool RemoveKeyInternal(Bucket<TKey, TValue> bucket, TKey key)
+    {
+        Entry<TKey, TValue>? previous = null;
+        var current = bucket.Head;
+
+        while (current != null)
+        {
+            if (current.Key!.Equals(key))
+            {
+                if (previous == null)
+                {
+                    bucket.Head = current.Next;
+                }
+                else
+                {
+                    previous.Next = current.Next;
+                }
+
+                _count--;
+                return true;
+            }
+
+            previous = current;
+            current = current.Next;
+        }
+
+        return false;
     }
 }
 
