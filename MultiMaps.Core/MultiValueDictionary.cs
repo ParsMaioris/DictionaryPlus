@@ -49,11 +49,7 @@ public class MultiValueDictionary<TKey, TValue>
 
     private int GetIndex(TKey key)
     {
-        if (key is null)
-        {
-            throw new NullReferenceException();
-        }
-        return Math.Abs(key.GetHashCode()) % _buckets.Length;
+        return Math.Abs(key!.GetHashCode()) % _buckets.Length;
     }
 
     private Entry<TKey, TValue>? FindEntry(Bucket<TKey, TValue> bucket, TKey key)
