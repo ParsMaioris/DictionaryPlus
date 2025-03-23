@@ -45,6 +45,25 @@ public class MultiValueDictionary<TKey, TValue>
         }
     }
 
+    public IReadOnlyCollection<TValue> GetValues(TKey key)
+    {
+        if (key == null) throw new ArgumentNullException(nameof(key));
+
+        int index = GetIndex(key);
+        var bucket = _buckets[index];
+        if (bucket == null) return Array.Empty<TValue>();
+
+        var entry = FindEntry(bucket, key);
+        if (entry == null)
+        {
+            return Array.Empty<TValue>();
+        }
+        else
+        {
+            return entry.Values.AsReadOnly();
+        }
+    }
+
     private void EnsureCapacity()
     {
         float loadFactor = (float)_count / _buckets.Length;
