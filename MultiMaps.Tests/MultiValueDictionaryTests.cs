@@ -33,4 +33,18 @@ public class MultiValueDictionaryTests
         Assert.AreEqual(1, values.Count);
         Assert.AreEqual(100, values.First());
     }
+
+    [TestMethod]
+    public void RemoveKeyTest()
+    {
+        var dictionary = new MultiValueDictionary<string, int>();
+        dictionary.Add("letters", 65);
+        dictionary.Add("letters", 66);
+
+        bool removed = dictionary.RemoveKey("letters");
+        var values = dictionary.GetValues("letters");
+
+        Assert.IsTrue(removed);
+        Assert.AreEqual(0, values.Count);
+    }
 }
