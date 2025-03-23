@@ -46,4 +46,28 @@ public class MultiValueDictionary<TKey, TValue>
             Resize(_buckets.Length * 2);
         }
     }
+
+    private int GetIndex(TKey key)
+    {
+        if (key is null)
+        {
+            throw new NullReferenceException();
+        }
+        return Math.Abs(key.GetHashCode()) % _buckets.Length;
+    }
+
+    private Entry<TKey, TValue>? FindEntry(Bucket<TKey, TValue> bucket, TKey key)
+    {
+        var current = bucket.Head;
+        while (current != null)
+        {
+            if (current.Key!.Equals(key))
+            {
+                return current;
+            }
+
+            current = current.Next;
+        }
+        return null;
+    }
 }
