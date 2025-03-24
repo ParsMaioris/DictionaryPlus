@@ -47,4 +47,25 @@ public class MultiValueDictionaryTests
         Assert.IsTrue(removed);
         Assert.AreEqual(0, values.Count);
     }
+
+    [TestMethod]
+    public void TestIteration()
+    {
+        var dict = new MultiValueDictionary<string, int>();
+        dict.Add("A", 1);
+        dict.Add("A", 2);
+        dict.Add("B", 10);
+
+        var pairs = new List<KeyValuePair<string, int>>();
+        foreach (var kvp in dict)
+        {
+            pairs.Add(kvp);
+        }
+
+        Assert.AreEqual(3, pairs.Count);
+
+        Assert.IsTrue(pairs.Any(p => p.Key == "A" && p.Value == 1));
+        Assert.IsTrue(pairs.Any(p => p.Key == "A" && p.Value == 2));
+        Assert.IsTrue(pairs.Any(p => p.Key == "B" && p.Value == 10));
+    }
 }
