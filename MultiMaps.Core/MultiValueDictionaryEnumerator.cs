@@ -12,5 +12,20 @@ internal class MultiValueDictionaryEnumerator<TKey, TValue> //: IEnumerator<KeyV
     public MultiValueDictionaryEnumerator(MultiValueDictionary<TKey, TValue> dictionary)
     {
         _dictionary = dictionary;
+        _version = dictionary.Version;
+        _bucketIndex = -1;
+        _currentEntry = null;
+        _valueIndex = -1;
+        _currentPair = null;
     }
+
+    public KeyValuePair<TKey, TValue> Current()
+    {
+        if (_currentPair == null)
+            throw new InvalidOperationException("Enumeration not started or has ended.");
+
+        return _currentPair.Value;
+    }
+
+    // object IEnumerator.Current => Current;
 }
