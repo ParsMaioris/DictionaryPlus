@@ -2,7 +2,7 @@ using System.Collections;
 
 namespace MultiMaps.Core;
 
-public class MultiDictionary<TKey, TValue> : IEnumerable<KeyValuePair<TKey, TValue>>
+public class MultiMap<TKey, TValue> : IEnumerable<KeyValuePair<TKey, TValue>>
 {
     private const int DefaultCapacity = 64;
     private const float LoadFactorThreshold = 0.75f;
@@ -14,12 +14,12 @@ public class MultiDictionary<TKey, TValue> : IEnumerable<KeyValuePair<TKey, TVal
 
     private readonly object _syncRoot = new object();
 
-    public MultiDictionary(int capacity)
+    public MultiMap(int capacity)
     {
         Buckets = new Bucket<TKey, TValue>[capacity];
     }
 
-    public MultiDictionary() : this(DefaultCapacity) { }
+    public MultiMap() : this(DefaultCapacity) { }
 
     public void Add(TKey key, TValue value)
     {

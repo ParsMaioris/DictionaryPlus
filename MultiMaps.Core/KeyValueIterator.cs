@@ -4,21 +4,21 @@ namespace MultiMaps.Core;
 
 internal class KeyValueIterator<TKey, TValue> : IEnumerator<KeyValuePair<TKey, TValue>>
 {
-    private readonly MultiDictionary<TKey, TValue> _dictionary;
+    private readonly MultiMap<TKey, TValue> _multiMap;
     private readonly object _syncRoot;
-    private int _version;
+    private int _expectedVersion;
     private int _bucketIndex;
     private Entry<TKey, TValue>? _currentEntry;
     private int _valueIndex;
     private KeyValuePair<TKey, TValue>? _currentPair;
 
     public KeyValueIterator(
-        MultiDictionary<TKey, TValue> dictionary,
+        MultiMap<TKey, TValue> dictionary,
         object syncRoot)
     {
-        _dictionary = dictionary;
+        _multiMap = dictionary;
         _syncRoot = syncRoot;
-        _version = dictionary.Version;
+        _expectedVersion = dictionary.Version;
         _bucketIndex = -1;
         _currentEntry = null;
         _valueIndex = -1;
@@ -41,7 +41,7 @@ internal class KeyValueIterator<TKey, TValue> : IEnumerator<KeyValuePair<TKey, T
     {
         lock (_syncRoot)
         {
-            if (_version != _dictionary.Version)
+            if (_expectedVersion != _multiMap.Version)
                 throw new InvalidOperationException("Collection was modified during iteration.");
 
             if (_currentEntry != null && _valueIndex < _currentEntry.Values.Count - 1)
@@ -66,9 +66,9 @@ internal class KeyValueIterator<TKey, TValue> : IEnumerator<KeyValuePair<TKey, T
                 }
             }
 
-            while (++_bucketIndex < _dictionary.Buckets.Length)
+            while (++_bucketIndex < _multiMap.Buckets.Length)
             {
-                var bucket = _dictionary.Buckets[_bucketIndex];
+                var bucket = _multiMap.Buckets[_bucketIndex];
                 if (bucket == null || bucket.Head == null)
                     continue;
 
@@ -93,7 +93,7 @@ internal class KeyValueIterator<TKey, TValue> : IEnumerator<KeyValuePair<TKey, T
     {
         lock (_syncRoot)
         {
-            if (_version != _dictionary.Version)
+            if (_expectedVersion != _multiMap.Version)
                 throw new InvalidOperationException("Collection was modified during iteration.");
 
             _bucketIndex = -1;
@@ -105,5 +105,13 @@ internal class KeyValueIterator<TKey, TValue> : IEnumerator<KeyValuePair<TKey, T
 
     public void Dispose()
     {
+    }
+
+    private void ValidateUnmodifiedCollection()
+    {
+        if (_expectedVersion != _multiMap.Version)
+        {
+
+        }
     }
 }

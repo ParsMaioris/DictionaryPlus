@@ -3,12 +3,12 @@ using MultiMaps.Core;
 namespace MultiMaps.Tests;
 
 [TestClass]
-public class MultiDictionary
+public class MultiMapTests
 {
     [TestMethod]
     public void AddAndGetValuesTest()
     {
-        var dictionary = new MultiDictionary<string, int>();
+        var dictionary = new MultiMap<string, int>();
         dictionary.Add("fruits", 1);
         dictionary.Add("fruits", 2);
         dictionary.Add("fruits", 3);
@@ -22,7 +22,7 @@ public class MultiDictionary
     [TestMethod]
     public void RemoveValueTest()
     {
-        var dictionary = new MultiDictionary<string, int>();
+        var dictionary = new MultiMap<string, int>();
         dictionary.Add("numbers", 42);
         dictionary.Add("numbers", 100);
 
@@ -37,7 +37,7 @@ public class MultiDictionary
     [TestMethod]
     public void RemoveKeyTest()
     {
-        var dictionary = new MultiDictionary<string, int>();
+        var dictionary = new MultiMap<string, int>();
         dictionary.Add("letters", 65);
         dictionary.Add("letters", 66);
 
@@ -51,7 +51,7 @@ public class MultiDictionary
     [TestMethod]
     public void TestIteration()
     {
-        var dict = new MultiDictionary<string, int>();
+        var dict = new MultiMap<string, int>();
         dict.Add("A", 1);
         dict.Add("A", 2);
         dict.Add("B", 10);
@@ -72,7 +72,7 @@ public class MultiDictionary
     [TestMethod]
     public void TestModifyDuringEnumeration_Throws()
     {
-        var dict = new MultiDictionary<string, int>();
+        var dict = new MultiMap<string, int>();
         dict.Add("test", 42);
 
         var enumerator = dict.GetEnumerator();
@@ -86,7 +86,7 @@ public class MultiDictionary
     [TestMethod]
     public void ConcurrentAddTest()
     {
-        var dict = new MultiDictionary<string, int>();
+        var dict = new MultiMap<string, int>();
 
         int taskCount = 5;
         int itemsPerTask = 1000;
