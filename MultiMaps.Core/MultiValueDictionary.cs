@@ -109,8 +109,7 @@ public class MultiValueDictionary<TKey, TValue> : IEnumerable<KeyValuePair<TKey,
 
     public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
     {
-        //return new MultiValueDictionaryEnumerator<TKey, TValue>(this);
-        throw new NotImplementedException();
+        return new MultiValueDictionaryEnumerator<TKey, TValue>(this);
     }
 
     IEnumerator IEnumerable.GetEnumerator()

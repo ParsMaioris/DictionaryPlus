@@ -1,6 +1,6 @@
 namespace MultiMaps.Core;
 
-internal class MultiValueDictionaryEnumerator<TKey, TValue> //: IEnumerator<KeyValuePair<TKey, TValue>>
+internal class MultiValueDictionaryEnumerator<TKey, TValue> : IEnumerator<KeyValuePair<TKey, TValue>>
 {
     private readonly MultiValueDictionary<TKey, TValue> _dictionary;
     private int _version;
@@ -27,7 +27,9 @@ internal class MultiValueDictionaryEnumerator<TKey, TValue> //: IEnumerator<KeyV
         return _currentPair.Value;
     }
 
-    // object IEnumerator.Current => Current;
+    KeyValuePair<TKey, TValue> IEnumerator<KeyValuePair<TKey, TValue>>.Current => Current();
+
+    object System.Collections.IEnumerator.Current => Current();
 
     public bool MoveNext()
     {
@@ -77,4 +79,17 @@ internal class MultiValueDictionaryEnumerator<TKey, TValue> //: IEnumerator<KeyV
         _currentPair = null;
         return false;
     }
+
+    public void Reset()
+    {
+        if (_version != _dictionary.Version)
+            throw new InvalidOperationException("Collectio  was modified during iteration");
+
+        _bucketIndex = -1;
+        _currentEntry = null;
+        _valueIndex = -1;
+        _currentPair = null;
+    }
+
+    public void Dispose() { }
 }
