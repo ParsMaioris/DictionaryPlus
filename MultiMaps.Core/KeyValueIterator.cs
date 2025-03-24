@@ -111,7 +111,25 @@ internal class KeyValueIterator<TKey, TValue> : IEnumerator<KeyValuePair<TKey, T
     {
         if (_expectedVersion != _multiMap.Version)
         {
-
+            throw new InvalidOperationException(
+                "Collection was modified during iteration.");
         }
+    }
+
+    private bool TryMoveNextEntryInChain()
+    {
+        if (_currentEntry != null && _currentEntry.Next != null)
+        {
+            _currentEntry = _currentEntry.Next;
+            _valueIndex = 0;
+
+            if (_currentEntry.Values.Count > 0)
+            {
+                //_currentEntry = CreateKeyValue(_currentEntry, _valueIndex);
+                return true;
+            }
+        }
+
+        return false;
     }
 }
