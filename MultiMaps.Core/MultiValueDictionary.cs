@@ -7,9 +7,11 @@ public class MultiValueDictionary<TKey, TValue> : IEnumerable<KeyValuePair<TKey,
     private const int DefaultCapacity = 64;
     private const float LoadFactorThreshold = 0.75f;
 
+    public int Count;
+
     internal Bucket<TKey, TValue>[] Buckets;
-    internal int Count;
     internal int Version;
+
     private readonly object _syncRoot = new object();
 
     public MultiValueDictionary(int capacity)
