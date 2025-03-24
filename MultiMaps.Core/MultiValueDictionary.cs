@@ -10,6 +10,7 @@ public class MultiValueDictionary<TKey, TValue> : IEnumerable<KeyValuePair<TKey,
     internal Bucket<TKey, TValue>[] Buckets;
     internal int Count;
     internal int Version;
+    private readonly object _syncRoot = new object();
 
     public MultiValueDictionary(int capacity)
     {
@@ -23,31 +24,34 @@ public class MultiValueDictionary<TKey, TValue> : IEnumerable<KeyValuePair<TKey,
         if (key == null)
             throw new ArgumentNullException(nameof(key));
 
-        EnsureCapacity();
-
-        int index = GetIndex(key);
-        Bucket<TKey, TValue> bucket;
-        if (Buckets[index] == null)
+        lock (_syncRoot)
         {
-            Buckets[index] = new Bucket<TKey, TValue>();
-        }
-        bucket = Buckets[index];
+            EnsureCapacity();
 
-        var entry = FindEntry(bucket, key);
-        if (entry == null)
-        {
-            entry = new Entry<TKey, TValue>(key);
-            entry.Values.Add(value);
-            entry.Next = bucket.Head;
-            bucket.Head = entry;
+            int index = GetIndex(key);
+            Bucket<TKey, TValue> bucket;
+            if (Buckets[index] == null)
+            {
+                Buckets[index] = new Bucket<TKey, TValue>();
+            }
+            bucket = Buckets[index];
 
-            Count++;
-            Version++;
-        }
-        else
-        {
-            entry.Values.Add(value);
-            Version++;
+            var entry = FindEntry(bucket, key);
+            if (entry == null)
+            {
+                entry = new Entry<TKey, TValue>(key);
+                entry.Values.Add(value);
+                entry.Next = bucket.Head;
+                bucket.Head = entry;
+
+                Count++;
+                Version++;
+            }
+            else
+            {
+                entry.Values.Add(value);
+                Version++;
+            }
         }
     }
 
@@ -56,18 +60,21 @@ public class MultiValueDictionary<TKey, TValue> : IEnumerable<KeyValuePair<TKey,
         if (key == null)
             throw new ArgumentNullException(nameof(key));
 
-        int index = GetIndex(key);
-        var bucket = Buckets[index];
-        if (bucket == null) return Array.Empty<TValue>();
+        lock (_syncRoot)
+        {
+            int index = GetIndex(key);
+            var bucket = Buckets[index];
+            if (bucket == null) return Array.Empty<TValue>();
 
-        var entry = FindEntry(bucket, key);
-        if (entry == null)
-        {
-            return Array.Empty<TValue>();
-        }
-        else
-        {
-            return entry.Values.AsReadOnly();
+            var entry = FindEntry(bucket, key);
+            if (entry == null)
+            {
+                return Array.Empty<TValue>();
+            }
+            else
+            {
+                return entry.Values.AsReadOnly();
+            }
         }
     }
 
@@ -76,23 +83,26 @@ public class MultiValueDictionary<TKey, TValue> : IEnumerable<KeyValuePair<TKey,
         if (key == null)
             throw new ArgumentNullException(nameof(key));
 
-        int index = GetIndex(key);
-        var bucket = Buckets[index];
-        if (bucket == null) return false;
-
-        var entry = FindEntry(bucket, key);
-        if (entry == null) return false;
-
-        bool removed = entry.Values.Remove(value);
-        if (removed)
+        lock (_syncRoot)
         {
-            Version++;
-            if (entry.Values.Count == 0)
+            int index = GetIndex(key);
+            var bucket = Buckets[index];
+            if (bucket == null) return false;
+
+            var entry = FindEntry(bucket, key);
+            if (entry == null) return false;
+
+            bool removed = entry.Values.Remove(value);
+            if (removed)
             {
-                RemoveKeyInternal(bucket, key);
+                Version++;
+                if (entry.Values.Count == 0)
+                {
+                    RemoveKeyInternal(bucket, key);
+                }
             }
+            return removed;
         }
-        return removed;
     }
 
     public bool RemoveKey(TKey key)
@@ -100,16 +110,19 @@ public class MultiValueDictionary<TKey, TValue> : IEnumerable<KeyValuePair<TKey,
         if (key == null)
             throw new ArgumentNullException(nameof(key));
 
-        int index = GetIndex(key);
-        var bucket = Buckets[index];
-        if (bucket == null) return false;
+        lock (_syncRoot)
+        {
+            int index = GetIndex(key);
+            var bucket = Buckets[index];
+            if (bucket == null) return false;
 
-        return RemoveKeyInternal(bucket, key);
+            return RemoveKeyInternal(bucket, key);
+        }
     }
 
     public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
     {
-        return new MultiValueDictionaryEnumerator<TKey, TValue>(this);
+        return new MultiValueDictionaryEnumerator<TKey, TValue>(this, _syncRoot);
     }
 
     IEnumerator IEnumerable.GetEnumerator()
