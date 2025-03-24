@@ -68,4 +68,18 @@ public class MultiValueDictionaryTests
         Assert.IsTrue(pairs.Any(p => p.Key == "A" && p.Value == 2));
         Assert.IsTrue(pairs.Any(p => p.Key == "B" && p.Value == 10));
     }
+
+    [TestMethod]
+    public void TestModifyDuringEnumeration_Throws()
+    {
+        var dict = new MultiValueDictionary<string, int>();
+        dict.Add("test", 42);
+
+        var enumerator = dict.GetEnumerator();
+        Assert.IsTrue(enumerator.MoveNext());
+
+        dict.Add("another", 100);
+
+        Assert.ThrowsException<InvalidOperationException>(() => enumerator.MoveNext());
+    }
 }
