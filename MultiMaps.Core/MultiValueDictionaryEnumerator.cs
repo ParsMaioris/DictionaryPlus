@@ -83,7 +83,7 @@ internal class MultiValueDictionaryEnumerator<TKey, TValue> : IEnumerator<KeyVal
     public void Reset()
     {
         if (_version != _dictionary.Version)
-            throw new InvalidOperationException("Collectio  was modified during iteration");
+            throw new InvalidOperationException("Collection was modified during iteration");
 
         _bucketIndex = -1;
         _currentEntry = null;
