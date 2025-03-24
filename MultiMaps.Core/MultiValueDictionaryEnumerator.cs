@@ -28,4 +28,53 @@ internal class MultiValueDictionaryEnumerator<TKey, TValue> //: IEnumerator<KeyV
     }
 
     // object IEnumerator.Current => Current;
+
+    public bool MoveNext()
+    {
+        if (_version != _dictionary.Version)
+            throw new InvalidOperationException("Collection was modified during iteration");
+
+        if (_currentEntry != null && _valueIndex < _currentEntry.Values.Count - 1)
+        {
+            _valueIndex++;
+            _currentPair = new KeyValuePair<TKey, TValue>(
+                _currentEntry.Key,
+                _currentEntry.Values[_valueIndex]);
+            return true;
+        }
+
+        if (_currentEntry != null && _currentEntry.Next != null)
+        {
+            _currentEntry = _currentEntry.Next;
+            _valueIndex = 0;
+            if (_currentEntry.Values.Count > 0)
+            {
+                _currentPair = new KeyValuePair<TKey, TValue>(
+                    _currentEntry.Key,
+                    _currentEntry.Values[_valueIndex]);
+                return true;
+            }
+        }
+
+        while (++_bucketIndex < _dictionary.Buckets.Length)
+        {
+            var bucket = _dictionary.Buckets[_bucketIndex];
+            if (bucket == null || bucket.Head == null)
+                continue;
+
+            _currentEntry = bucket.Head;
+            _valueIndex = 0;
+
+            if (_currentEntry.Values.Count > 0)
+            {
+                _currentPair = new KeyValuePair<TKey, TValue>(
+                    _currentEntry.Key,
+                    _currentEntry.Values[_valueIndex]);
+                return true;
+            }
+        }
+
+        _currentPair = null;
+        return false;
+    }
 }
