@@ -4,7 +4,7 @@ namespace MultiMaps.Core;
 
 internal class KeyValueIterator<TKey, TValue> : IEnumerator<KeyValuePair<TKey, TValue>>
 {
-    private readonly MultiValueDictionary<TKey, TValue> _dictionary;
+    private readonly MultiDictionary<TKey, TValue> _dictionary;
     private readonly object _syncRoot;
     private int _version;
     private int _bucketIndex;
@@ -13,7 +13,7 @@ internal class KeyValueIterator<TKey, TValue> : IEnumerator<KeyValuePair<TKey, T
     private KeyValuePair<TKey, TValue>? _currentPair;
 
     public KeyValueIterator(
-        MultiValueDictionary<TKey, TValue> dictionary,
+        MultiDictionary<TKey, TValue> dictionary,
         object syncRoot)
     {
         _dictionary = dictionary;
