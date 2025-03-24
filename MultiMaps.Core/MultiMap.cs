@@ -7,88 +7,56 @@ public class MultiMap<TKey, TValue> : IEnumerable<KeyValuePair<TKey, TValue>>
     private const int DefaultCapacity = 64;
     private const float LoadFactorThreshold = 0.75f;
 
-    public int Count;
-
-    internal Bucket<TKey, TValue>[] Buckets;
-    internal int Version;
-
     private readonly object _syncRoot = new object();
+
+    private int _count;
+    private Bucket<TKey, TValue>[] _buckets;
+
+    internal int Version { get; private set; }
+    internal Bucket<TKey, TValue>[] Buckets => _buckets;
+
+    public int Count => _count;
 
     public MultiMap(int capacity)
     {
-        Buckets = new Bucket<TKey, TValue>[capacity];
+        _buckets = new Bucket<TKey, TValue>[capacity];
     }
 
     public MultiMap() : this(DefaultCapacity) { }
 
     public void Add(TKey key, TValue value)
     {
-        if (key == null)
-            throw new ArgumentNullException(nameof(key));
+        if (key == null) throw new ArgumentNullException(nameof(key));
 
         lock (_syncRoot)
         {
-            EnsureCapacity();
-
-            int index = GetIndex(key);
-            Bucket<TKey, TValue> bucket;
-            if (Buckets[index] == null)
-            {
-                Buckets[index] = new Bucket<TKey, TValue>();
-            }
-            bucket = Buckets[index];
-
-            var entry = FindEntry(bucket, key);
-            if (entry == null)
-            {
-                entry = new Entry<TKey, TValue>(key);
-                entry.Values.Add(value);
-                entry.Next = bucket.Head;
-                bucket.Head = entry;
-
-                Count++;
-                Version++;
-            }
-            else
-            {
-                entry.Values.Add(value);
-                Version++;
-            }
+            ExpandIfNeeded();
+            var bucket = GetOrCreateBucket(key);
+            InsertValueIntoBucket(bucket, key, value);
         }
     }
 
     public IReadOnlyCollection<TValue> GetValues(TKey key)
     {
-        if (key == null)
-            throw new ArgumentNullException(nameof(key));
+        if (key == null) throw new ArgumentNullException(nameof(key));
 
         lock (_syncRoot)
         {
-            int index = GetIndex(key);
-            var bucket = Buckets[index];
+            var bucket = FindBucket(key);
             if (bucket == null) return Array.Empty<TValue>();
 
             var entry = FindEntry(bucket, key);
-            if (entry == null)
-            {
-                return Array.Empty<TValue>();
-            }
-            else
-            {
-                return entry.Values.AsReadOnly();
-            }
+            return entry == null ? Array.Empty<TValue>() : entry.Values.AsReadOnly();
         }
     }
 
     public bool RemoveValue(TKey key, TValue value)
     {
-        if (key == null)
-            throw new ArgumentNullException(nameof(key));
+        if (key == null) throw new ArgumentNullException(nameof(key));
 
         lock (_syncRoot)
         {
-            int index = GetIndex(key);
-            var bucket = Buckets[index];
+            var bucket = FindBucket(key);
             if (bucket == null) return false;
 
             var entry = FindEntry(bucket, key);
@@ -97,10 +65,10 @@ public class MultiMap<TKey, TValue> : IEnumerable<KeyValuePair<TKey, TValue>>
             bool removed = entry.Values.Remove(value);
             if (removed)
             {
-                Version++;
+                IncrementVersion();
                 if (entry.Values.Count == 0)
                 {
-                    RemoveKeyInternal(bucket, key);
+                    RemoveKeyFromBucket(bucket, key);
                 }
             }
             return removed;
@@ -109,16 +77,14 @@ public class MultiMap<TKey, TValue> : IEnumerable<KeyValuePair<TKey, TValue>>
 
     public bool RemoveKey(TKey key)
     {
-        if (key == null)
-            throw new ArgumentNullException(nameof(key));
+        if (key == null) throw new ArgumentNullException(nameof(key));
 
         lock (_syncRoot)
         {
-            int index = GetIndex(key);
-            var bucket = Buckets[index];
+            var bucket = FindBucket(key);
             if (bucket == null) return false;
 
-            return RemoveKeyInternal(bucket, key);
+            return RemoveKeyFromBucket(bucket, key);
         }
     }
 
@@ -132,42 +98,73 @@ public class MultiMap<TKey, TValue> : IEnumerable<KeyValuePair<TKey, TValue>>
         return GetEnumerator();
     }
 
-    private void EnsureCapacity()
+    private void ExpandIfNeeded()
     {
-        float loadFactor = (float)Count / Buckets.Length;
+        float loadFactor = (float)_count / _buckets.Length;
         if (loadFactor >= LoadFactorThreshold)
         {
-            Resize(Buckets.Length * 2);
+            Resize(_buckets.Length * 2);
         }
     }
 
     private void Resize(int newCapacity)
     {
-        var oldBuckets = Buckets;
-        Buckets = new Bucket<TKey, TValue>[newCapacity];
-        Count = 0;
-        Version++;
+        var oldBuckets = _buckets;
+        _buckets = new Bucket<TKey, TValue>[newCapacity];
+        _count = 0;
+        IncrementVersion();
 
-        foreach (var bucket in oldBuckets)
+        foreach (var oldBucket in oldBuckets)
         {
-            if (bucket == null) continue;
+            if (oldBucket == null) continue;
 
-            var entry = bucket.Head;
+            var entry = oldBucket.Head;
             while (entry != null)
             {
                 foreach (var value in entry.Values)
                 {
                     Add(entry.Key, value);
                 }
-
                 entry = entry.Next;
             }
         }
     }
 
-    private int GetIndex(TKey key)
+    private void InsertValueIntoBucket(Bucket<TKey, TValue> bucket, TKey key, TValue value)
     {
-        return Math.Abs(key!.GetHashCode()) % Buckets.Length;
+        var entry = FindEntry(bucket, key);
+        if (entry == null)
+        {
+            entry = new Entry<TKey, TValue>(key);
+            entry.Values.Add(value);
+
+            entry.Next = bucket.Head;
+            bucket.Head = entry;
+
+            _count++;
+            IncrementVersion();
+        }
+        else
+        {
+            entry.Values.Add(value);
+            IncrementVersion();
+        }
+    }
+
+    private Bucket<TKey, TValue> GetOrCreateBucket(TKey key)
+    {
+        int index = GetBucketIndex(key);
+        if (_buckets[index] == null)
+        {
+            _buckets[index] = new Bucket<TKey, TValue>();
+        }
+        return _buckets[index];
+    }
+
+    private Bucket<TKey, TValue>? FindBucket(TKey key)
+    {
+        int index = GetBucketIndex(key);
+        return _buckets[index];
     }
 
     private Entry<TKey, TValue>? FindEntry(Bucket<TKey, TValue> bucket, TKey key)
@@ -179,13 +176,12 @@ public class MultiMap<TKey, TValue> : IEnumerable<KeyValuePair<TKey, TValue>>
             {
                 return current;
             }
-
             current = current.Next;
         }
         return null;
     }
 
-    private bool RemoveKeyInternal(Bucket<TKey, TValue> bucket, TKey key)
+    private bool RemoveKeyFromBucket(Bucket<TKey, TValue> bucket, TKey key)
     {
         Entry<TKey, TValue>? previous = null;
         var current = bucket.Head;
@@ -203,13 +199,23 @@ public class MultiMap<TKey, TValue> : IEnumerable<KeyValuePair<TKey, TValue>>
                     previous.Next = current.Next;
                 }
 
-                Count--;
-                Version++;
+                _count--;
+                IncrementVersion();
                 return true;
             }
             previous = current;
             current = current.Next;
         }
         return false;
+    }
+
+    private int GetBucketIndex(TKey key)
+    {
+        return Math.Abs(key!.GetHashCode()) % _buckets.Length;
+    }
+
+    private void IncrementVersion()
+    {
+        Version++;
     }
 }
