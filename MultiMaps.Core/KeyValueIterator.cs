@@ -2,7 +2,7 @@ using System.Collections;
 
 namespace MultiMaps.Core;
 
-internal class MultiValueDictionaryEnumerator<TKey, TValue> : IEnumerator<KeyValuePair<TKey, TValue>>
+internal class KeyValueIterator<TKey, TValue> : IEnumerator<KeyValuePair<TKey, TValue>>
 {
     private readonly MultiValueDictionary<TKey, TValue> _dictionary;
     private readonly object _syncRoot;
@@ -12,7 +12,7 @@ internal class MultiValueDictionaryEnumerator<TKey, TValue> : IEnumerator<KeyVal
     private int _valueIndex;
     private KeyValuePair<TKey, TValue>? _currentPair;
 
-    public MultiValueDictionaryEnumerator(
+    public KeyValueIterator(
         MultiValueDictionary<TKey, TValue> dictionary,
         object syncRoot)
     {

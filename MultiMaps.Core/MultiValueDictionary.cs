@@ -124,7 +124,7 @@ public class MultiValueDictionary<TKey, TValue> : IEnumerable<KeyValuePair<TKey,
 
     public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
     {
-        return new MultiValueDictionaryEnumerator<TKey, TValue>(this, _syncRoot);
+        return new KeyValueIterator<TKey, TValue>(this, _syncRoot);
     }
 
     IEnumerator IEnumerable.GetEnumerator()
