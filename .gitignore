@@ -334,7 +334,9 @@ __pycache__/
 *.pyc
 
 # Cake - Uncomment if you are using it
-MultiMaps.Core/tools/
+MultiMaps.Core/Tools/
+MultiMaps.Tests/Tools/
+
 
 # Tabs Studio
 *.tss
