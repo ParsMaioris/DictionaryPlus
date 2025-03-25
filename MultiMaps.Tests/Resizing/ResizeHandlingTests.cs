@@ -38,7 +38,7 @@ public class ResizeHandlingTests
         var map = new MultiMap<string, string>(2);
         map.Add("apple", "red");
         map.Add("banana", "yellow");
-        map.Add("grape", "purple"); // triggers resize
+        map.Add("grape", "purple");
 
         var appleValues = map.GetValues("apple");
         var bananaValues = map.GetValues("banana");
