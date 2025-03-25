@@ -20,4 +20,14 @@
     <ProjectReference Include="..\MultiMaps.Core\MultiMaps.Core.csproj" />
   </ItemGroup>
 
+   <ItemGroup>
+    <Compile Remove="Tools\**\*.cs" />
+    <None Remove="Tools\**\*.*" />
+  </ItemGroup>
+
+   <ItemGroup>
+     <Folder Include="Resizing/" />
+     <Folder Include="Validation/" />
+   </ItemGroup>
+
 </Project>
