@@ -39,7 +39,7 @@ public class MultiMapIteratorTests
         {
             foreach (var kvp in map)
             {
-                map.Add("gamma", 3); // triggers modification
+                map.Add("gamma", 3);
             }
         });
     }
@@ -53,13 +53,10 @@ public class MultiMapIteratorTests
 
         var enumerator = map.GetEnumerator();
 
-        // Move next once
         Assert.IsTrue(enumerator.MoveNext());
 
-        // Reset
         enumerator.Reset();
 
-        // Move again from start
         Assert.IsTrue(enumerator.MoveNext());
         enumerator.Dispose();
     }
@@ -82,7 +79,7 @@ public class MultiMapIteratorTests
 
         Assert.ThrowsException<InvalidOperationException>(() =>
         {
-            _ = enumerator.Current; // attempt before MoveNext
+            _ = enumerator.Current;
         });
     }
 
@@ -93,12 +90,12 @@ public class MultiMapIteratorTests
         map.Add("k1", "v1");
         var enumerator = map.GetEnumerator();
 
-        Assert.IsTrue(enumerator.MoveNext()); // first value
-        Assert.IsFalse(enumerator.MoveNext()); // end reached
+        Assert.IsTrue(enumerator.MoveNext());
+        Assert.IsFalse(enumerator.MoveNext());
 
         Assert.ThrowsException<InvalidOperationException>(() =>
         {
-            _ = enumerator.Current; // attempt after end
+            _ = enumerator.Current;
         });
     }
 }
