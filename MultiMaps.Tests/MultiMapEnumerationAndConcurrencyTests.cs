@@ -3,53 +3,10 @@ using MultiMaps.Core;
 namespace MultiMaps.Tests;
 
 [TestClass]
-public class MultiMapTests
+public class MultiMapEnumerationAndConcurrencyTests
 {
     [TestMethod]
-    public void AddAndGetValuesTest()
-    {
-        var dictionary = new MultiMap<string, int>();
-        dictionary.Add("fruits", 1);
-        dictionary.Add("fruits", 2);
-        dictionary.Add("fruits", 3);
-
-        var values = dictionary.GetValues("fruits");
-
-        Assert.AreEqual(3, values.Count);
-        CollectionAssert.AreEquivalent(new[] { 1, 2, 3 }, values.ToArray());
-    }
-
-    [TestMethod]
-    public void RemoveValueTest()
-    {
-        var dictionary = new MultiMap<string, int>();
-        dictionary.Add("numbers", 42);
-        dictionary.Add("numbers", 100);
-
-        bool removed = dictionary.RemoveValue("numbers", 42);
-        var values = dictionary.GetValues("numbers");
-
-        Assert.IsTrue(removed);
-        Assert.AreEqual(1, values.Count);
-        Assert.AreEqual(100, values.First());
-    }
-
-    [TestMethod]
-    public void RemoveKeyTest()
-    {
-        var dictionary = new MultiMap<string, int>();
-        dictionary.Add("letters", 65);
-        dictionary.Add("letters", 66);
-
-        bool removed = dictionary.RemoveKey("letters");
-        var values = dictionary.GetValues("letters");
-
-        Assert.IsTrue(removed);
-        Assert.AreEqual(0, values.Count);
-    }
-
-    [TestMethod]
-    public void TestIteration()
+    public void Iteration_EnumeratesAllKeyValues()
     {
         var dict = new MultiMap<string, int>();
         dict.Add("A", 1);
@@ -63,14 +20,13 @@ public class MultiMapTests
         }
 
         Assert.AreEqual(3, pairs.Count);
-
         Assert.IsTrue(pairs.Any(p => p.Key == "A" && p.Value == 1));
         Assert.IsTrue(pairs.Any(p => p.Key == "A" && p.Value == 2));
         Assert.IsTrue(pairs.Any(p => p.Key == "B" && p.Value == 10));
     }
 
     [TestMethod]
-    public void TestModifyDuringEnumeration_Throws()
+    public void ModifyDuringEnumeration_ThrowsInvalidOperationException()
     {
         var dict = new MultiMap<string, int>();
         dict.Add("test", 42);
@@ -84,7 +40,7 @@ public class MultiMapTests
     }
 
     [TestMethod]
-    public void ConcurrentAddTest()
+    public void ConcurrentAdd_MultipleTasksSuccessfullyAddItems()
     {
         var dict = new MultiMap<string, int>();
 
@@ -109,7 +65,6 @@ public class MultiMapTests
         Assert.IsTrue(dict.Count > 0);
 
         var valuesForKey42 = dict.GetValues("Key_42");
-
         Assert.IsTrue(valuesForKey42.Count >= 1);
     }
 }
