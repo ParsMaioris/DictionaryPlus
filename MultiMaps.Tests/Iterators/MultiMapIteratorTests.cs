@@ -4,10 +4,10 @@ namespace MultiMaps.Tests.Enumerations;
 
 [TestClass]
 [TestCategory("Enumeration")]
-public class MultiMapEnumeratorTests
+public class MultiMapIteratorTests
 {
     [TestMethod]
-    public void Enumerator_ShouldIterateOverAllKeyValuePairs()
+    public void Iterator_ShouldIterateOverAllKeyValuePairs()
     {
         var map = new MultiMap<string, int>();
         map.Add("x", 1);
@@ -29,7 +29,7 @@ public class MultiMapEnumeratorTests
     }
 
     [TestMethod]
-    public void Enumerator_ModifyCollectionDuringIteration_ShouldThrow()
+    public void Iterator_ModifyCollectionDuringIteration_ShouldThrow()
     {
         var map = new MultiMap<string, int>();
         map.Add("alpha", 1);
@@ -39,13 +39,13 @@ public class MultiMapEnumeratorTests
         {
             foreach (var kvp in map)
             {
-                map.Add("gamma", 3);
+                map.Add("gamma", 3); // triggers modification
             }
         });
     }
 
     [TestMethod]
-    public void Enumerator_Reset_ShouldRestartIteration()
+    public void Iterator_Reset_ShouldRestartIteration()
     {
         var map = new MultiMap<int, int>();
         map.Add(100, 200);
@@ -53,10 +53,13 @@ public class MultiMapEnumeratorTests
 
         var enumerator = map.GetEnumerator();
 
+        // Move next once
         Assert.IsTrue(enumerator.MoveNext());
 
+        // Reset
         enumerator.Reset();
 
+        // Move again from start
         Assert.IsTrue(enumerator.MoveNext());
         enumerator.Dispose();
     }
@@ -79,8 +82,7 @@ public class MultiMapEnumeratorTests
 
         Assert.ThrowsException<InvalidOperationException>(() =>
         {
-            // Attempt to read Current before calling MoveNext
-            _ = enumerator.Current;
+            _ = enumerator.Current; // attempt before MoveNext
         });
     }
 
@@ -91,13 +93,12 @@ public class MultiMapEnumeratorTests
         map.Add("k1", "v1");
         var enumerator = map.GetEnumerator();
 
-        // MoveNext once, then again to go past end
-        Assert.IsTrue(enumerator.MoveNext());
-        Assert.IsFalse(enumerator.MoveNext());
+        Assert.IsTrue(enumerator.MoveNext()); // first value
+        Assert.IsFalse(enumerator.MoveNext()); // end reached
 
         Assert.ThrowsException<InvalidOperationException>(() =>
         {
-            _ = enumerator.Current;
+            _ = enumerator.Current; // attempt after end
         });
     }
 }
